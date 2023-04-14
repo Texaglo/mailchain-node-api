@@ -1,6 +1,8 @@
 const express = require("express");
+require("dotenv").config();
 const Mailchain = require("@mailchain/sdk").Mailchain;
 const cors = require("cors");
+const { Configuration, OpenAIApi } = require("openai");
 // import { Mailchain } from "@mailchain/sdk";
 
 const app = express();
@@ -16,27 +18,48 @@ app.use(
   })
 );
 
+//OPEN AI CONFIG
+const configuration = new Configuration({
+  organization: process.env.ORG_ID,
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+//MAILCHAIN RECOVERY PHRASE
 const secretRecoveryPhrase =
   "imitate increase ritual oil draft cross recycle alien clip double owner gown feed trend bone quarter nice fit theme reason found limit hood waste";
 const mailchain = Mailchain.fromSecretRecoveryPhrase(secretRecoveryPhrase);
 
-const getUser = async () => {
-  const user = await mailchain.user();
-  console.log(user.address);
+const gptResponse = async (message) => {
+  try {
+    const response = await openai.createCompletion({
+      model: "text-davinci-003",
+      prompt: message,
+      max_tokens: 2048,
+      temperature: 1,
+    });
+    return response.data.choices[0].text;
+  } catch (error) {
+    console.log(error);
+  }
 };
-getUser();
 
 const senMail = async (req, res) => {
   // from: `sifat33@mailchain.com`,
   // to: [`0x2F1d7Eb39779373A85d49C1293d92c3ECA465f6F@ethereum.mailchain.com`],
+
+  const user = await mailchain.user();
+  console.log(user.address);
+
+  const emailMessage = await gptResponse(req.body.message);
 
   const { data, error } = await mailchain.sendMail({
     from: `sifat33@mailchain.com`, // sender address
     to: [`${req.body.email}@ethereum.mailchain.com`], // list of recipients (blockchain or mailchain addresses)
     subject: req.body.name, // subject line
     content: {
-      text: "Hello Mailchain 👋", // plain text body
-      html: "<p>Hello Mailchain 👋</p>", // html body
+      text: emailMessage, // plain text body
+      html: `<p>${emailMessage}</p>`, // html body
     },
   });
   if (error) {
