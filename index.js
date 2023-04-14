@@ -3,6 +3,7 @@ require("dotenv").config();
 const Mailchain = require("@mailchain/sdk").Mailchain;
 const cors = require("cors");
 const { Configuration, OpenAIApi } = require("openai");
+const schedule = require("node-schedule");
 // import { Mailchain } from "@mailchain/sdk";
 
 const app = express();
@@ -26,9 +27,21 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 //MAILCHAIN RECOVERY PHRASE
-const secretRecoveryPhrase =
-  "imitate increase ritual oil draft cross recycle alien clip double owner gown feed trend bone quarter nice fit theme reason found limit hood waste";
+const secretRecoveryPhrase = process.env.RECOVERY_PHRASE;
 const mailchain = Mailchain.fromSecretRecoveryPhrase(secretRecoveryPhrase);
+
+const dataList = [
+  {
+    name: "sifat",
+    age: "100",
+    time: "2023-04-14T22:43",
+  },
+  {
+    name: "rifat",
+    age: "200",
+    time: "2023-04-14T22:44",
+  },
+];
 
 const gptResponse = async (message) => {
   try {
@@ -45,30 +58,43 @@ const gptResponse = async (message) => {
 };
 
 const senMail = async (req, res) => {
-  // from: `sifat33@mailchain.com`,
-  // to: [`0x2F1d7Eb39779373A85d49C1293d92c3ECA465f6F@ethereum.mailchain.com`],
-
   const user = await mailchain.user();
   console.log(user.address);
 
-  const emailMessage = await gptResponse(req.body.message);
+  req.body.forEach(async (element, index) => {
+    console.log(element);
 
-  const { data, error } = await mailchain.sendMail({
-    from: `sifat33@mailchain.com`, // sender address
-    to: [`${req.body.email}@ethereum.mailchain.com`], // list of recipients (blockchain or mailchain addresses)
-    subject: req.body.name, // subject line
-    content: {
-      text: emailMessage, // plain text body
-      html: `<p>${emailMessage}</p>`, // html body
-    },
+    const job = schedule.scheduleJob(element.getTime, async () => {
+      console.log("The world is going to end today.");
+
+      const emailMessage = await gptResponse(element.message);
+
+      const { data, error } = await mailchain.sendMail({
+        from: user.address, // sender address
+        to: [`${element.toEmail}@ethereum.mailchain.com`], // list of recipients (blockchain or mailchain addresses)
+        subject: element.name, // subject line
+        content: {
+          text: emailMessage, // plain text body
+          html: `<p>${emailMessage}</p>`, // html body
+        },
+      });
+      if (error) {
+        // handle error
+        console.warn("Mailchain error", error);
+        return;
+      }
+      // handle success send mail result
+      console.log(data);
+    });
   });
-  if (error) {
-    // handle error
-    console.warn("Mailchain error", error);
-    return;
-  }
-  // handle success send mail result
-  console.log(data);
+
+  // from: user.address, // sender address
+  //       to: [`${req.body.email}@ethereum.mailchain.com`], // list of recipients (blockchain or mailchain addresses)
+  //       subject: req.body.name, // subject line
+  //       content: {
+  //         text: emailMessage, // plain text body
+  //         html: `<p>${emailMessage}</p>`, // html body
+  //       },
 
   res.send({
     Response_code: 200,
