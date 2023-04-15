@@ -8,16 +8,13 @@ const schedule = require("node-schedule");
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+// app.use(cors());
 
-// app.use(
-//   cors({
-//     origin: "*",
-//     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-//     preflightContinue: false,
-//     optionsSuccessStatus: 204,
-//   })
-// );
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+  })
+);
 
 //OPEN AI CONFIG
 const configuration = new Configuration({
@@ -29,19 +26,6 @@ const openai = new OpenAIApi(configuration);
 //MAILCHAIN RECOVERY PHRASE
 const secretRecoveryPhrase = process.env.RECOVERY_PHRASE;
 const mailchain = Mailchain.fromSecretRecoveryPhrase(secretRecoveryPhrase);
-
-const dataList = [
-  {
-    name: "sifat",
-    age: "100",
-    time: "2023-04-14T22:43",
-  },
-  {
-    name: "rifat",
-    age: "200",
-    time: "2023-04-14T22:44",
-  },
-];
 
 const gptResponse = async (message) => {
   try {
