@@ -12,7 +12,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: "https://mailchain-gpt.vercel.app/",
+    origin: "https://mailchain-gpt.vercel.app",
   })
 );
 
