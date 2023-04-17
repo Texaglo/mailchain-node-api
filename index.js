@@ -46,9 +46,16 @@ const senMail = async (req, res) => {
   console.log(user.address);
 
   req.body.forEach(async (element, index) => {
-    console.log(element);
+    let executeTime = element.getTime;
+    if (executeTime == null) {
+      let utcTime = new Date();
+      console.log(utcTime);
+      utcTime.setSeconds(utcTime.getSeconds() + 10);
+      executeTime = new Date(utcTime);
+    }
+    console.log(executeTime);
 
-    const job = schedule.scheduleJob(element.getTime, async () => {
+    const job = schedule.scheduleJob(executeTime, async () => {
       console.log("The world is going to end today.");
 
       const emailMessage = await gptResponse(element.message);
